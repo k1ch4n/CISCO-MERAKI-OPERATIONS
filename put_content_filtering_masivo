@@ -1,0 +1,52 @@
+#El presente programa configura la seccion CONTENT FILTERING de manera masiva
+
+import meraki
+
+API_KEY = 'xxxxxxxxxxxxxxxx' #poner entre comillas API key correspondiente
+
+dashboard = meraki.DashboardAPI(API_KEY)
+
+organization_id = 'xxxxxxxxxxxx' #poner entre comillas la organizacion a configurar
+all_redes = dashboard.organizations.getOrganizationDevices(organization_id, total_pages='all')
+
+for i in range(len(all_redes)):
+#for i in ['c']:
+#network_id = i	
+	network_id = all_redes[i]['networkId']
+	#para probar LABMX67
+	#network_id = 'xxxxxxx' #poner entre comillas el network_id de un dispositivo de prueba
+	
+	response_g = dashboard.appliance.getNetworkApplianceContentFiltering(
+    network_id)
+	
+	x = response_g['allowedUrlPatterns']
+	list_a = []
+	for i in range(0,len(x)):
+		list_a.append(x[i])
+	#print(la)
+	a = list_a
+	a.insert(len(a),'http://xxx.com:8080') #Este es un ejemplo de alguna pagina q se quiera añadir a todas las redes de la organización
+	#a.insert(len(a),'https://xxxx.xxx/xxx.com') #Puedes añadir tantos URL como sean necesarios, solo apilar en esta sección
+	
+	#con lo siguiente me aseguro que no existan elementos repetidos
+	a=list(dict.fromkeys(a))
+	b = ['https://www.youtube.com','https://www.youtube.*','https://youtube.com','https://www.netflix.com'] #En esta lista se añadira todo los URLs que se quiera bloquear
+	c = ['meraki:contentFiltering/category/1','meraki:contentFiltering/category/n'] #En esta lista van las categorias que quieras blockear (revisar documentación), el primer elemento de la lista bloquea categoria 1(real estate), el segundo elemento es uno generico donde n representa el numero de categoria q se quiera bloquear 
+	d = "fullList" #revisar documentacion hay 2 modos fullList y top sites only
+	#print("la lista es",a)
+	
+	if all_redes[i]['model'] == 'MX67':#Importante!, en esta parte se esta haciendo un filtrado, para este caso se esta poniendo como condicional de configuración que el equipo sea el modelo Meraki MX67, en caso lo sea se aplicara las configuraciones establecidas
+
+		response = dashboard.appliance.updateNetworkApplianceContentFiltering(
+		network_id, 
+		allowedUrlPatterns=a, 
+		blockedUrlPatterns=b, 
+		blockedUrlCategories=c, 
+		urlCategoryListSize=d
+		)
+
+
+		print("red|",all_redes[i]['name'],"|Actualizado!")
+	else:
+		print('revisar red|',all_redes[i]['name'],"|networkId|",network_id)
+#fin
